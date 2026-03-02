@@ -1,7 +1,8 @@
 import database from "infra/database";
 import email from "infra/email";
 import webserver from "infra/webserver";
-import { UnauthorizedError } from "infra/errors";
+import { ForbiddenError, NotFoundError } from "infra/errors";
+import authorization from "models/authorization";
 import user from "models/user";
 
 const EXPIRATION_IN_MILLISECONDS = 60 * 15 * 1000; // 15 minutes
@@ -52,7 +53,7 @@ async function findOneValidById(tokenId) {
     });
 
     if (results.rowCount === 0) {
-      throw new UnauthorizedError({
+      throw new NotFoundError({
         message: "Token de ativação utilizado não encontrado ou expirou.",
         action: "Faça um novo cadastro.",
       });
@@ -87,6 +88,14 @@ async function markTokenAsUsed(activationTokenId) {
 }
 
 async function activateUserByUserId(userId) {
+  const userToActivate = await user.findOneById(userId);
+  if (!authorization.can(userToActivate, "read:activation_token")) {
+    throw new ForbiddenError({
+      message: "Usuário não possui permissão para ativar conta.",
+      action: "Contate o suporte.",
+    });
+  }
+
   const activatedUser = await user.setFeatures(userId, [
     "create:session",
     "read:session",
@@ -106,6 +115,7 @@ ${webserver.origin}/signup/activate/${activationToken.id}`,
 }
 
 const activation = {
+  EXPIRATION_IN_MILLISECONDS,
   create,
   findOneValidById,
   markTokenAsUsed,

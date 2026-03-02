@@ -69,6 +69,44 @@ describe("PATCH /api/v1/users/[username]", () => {
 
     test("With duplicated 'username'", async () => {
       await orchestrator.createUser({
+        username: "username1",
+      });
+
+      const createdUser2 = await orchestrator.createUser({
+        username: "username2",
+      });
+
+      const activatedUser2 = await orchestrator.activateUser(createdUser2.id);
+      const sessionObject2 = await orchestrator.createSession(
+        activatedUser2.id,
+      );
+
+      const response = await fetch(
+        "http://localhost:3000/api/v1/users/username2",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Cookie: `session_id=${sessionObject2.token}`,
+          },
+          body: JSON.stringify({
+            username: "username1",
+          }),
+        },
+      );
+      expect(response.status).toBe(400);
+
+      const responseBody = await response.json();
+      expect(responseBody).toEqual({
+        name: "ValidationError",
+        message: "O username informado já está sendo utilizado.",
+        action: "Utilize outro username para realizar esta operação.",
+        status_code: 400,
+      });
+    });
+
+    test("With `user2` targeting `user1`", async () => {
+      await orchestrator.createUser({
         username: "user1",
       });
 
@@ -81,24 +119,24 @@ describe("PATCH /api/v1/users/[username]", () => {
         activatedUser2.id,
       );
 
-      const response = await fetch("http://localhost:3000/api/v1/users/user2", {
+      const response = await fetch("http://localhost:3000/api/v1/users/user1", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Cookie: `session_id=${sessionObject2.token}`,
         },
         body: JSON.stringify({
-          username: "user1",
+          username: "user3",
         }),
       });
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(403);
 
       const responseBody = await response.json();
       expect(responseBody).toEqual({
-        name: "ValidationError",
-        message: "O username informado já está sendo utilizado.",
-        action: "Utilize outro username para realizar esta operação.",
-        status_code: 400,
+        name: "ForbiddenError",
+        message: "Você não possui permissão para realizar esta ação.",
+        action: "Verifique se você possui as permissões necessárias.",
+        status_code: 403,
       });
     });
 

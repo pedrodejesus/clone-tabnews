@@ -13,6 +13,7 @@
     "services:down": "docker compose -f infra/compose.yaml down",
     "services:wait:database": "node infra/scripts/wait-for-postgres.js",
     "migrations:up": "node-pg-migrate --migrations-dir infra/migrations --envPath .env.development up",
+    "migrations:up:dry": "node-pg-migrate --migrations-dir infra/migrations --envPath .env.development --dry-run up",
     "migrations:down": "node-pg-migrate --migrations-dir infra/migrations --envPath .env.development down",
     "migrations:create": "node-pg-migrate --migrations-dir infra/migrations create",
     "lint:prettier:check": "prettier --check .",

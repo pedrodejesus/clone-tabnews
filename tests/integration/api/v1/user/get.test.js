@@ -127,7 +127,6 @@ describe("GET /api/v1/user", () => {
         id: activatedUser.id,
         username: "UserWithValidSession",
         email: activatedUser.email,
-        password: activatedUser.password,
         features: ["create:session", "read:session", "update:user"],
         created_at: activatedUser.created_at.toISOString(),
         updated_at: activatedUser.updated_at.toISOString(),

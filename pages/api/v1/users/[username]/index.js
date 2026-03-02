@@ -13,9 +13,17 @@ router.patch(controller.canRequest("update:user"), patchHandler);
 export default router.handler(controller.errorHandlers);
 
 async function getHandler(request, response) {
+  const userTryingToGet = request.context.user;
   const username = request.query.username;
   const userFound = await user.findOneByUsername(username);
-  return response.status(200).json(userFound);
+
+  const secureOutputValues = authorization.filterOutput(
+    userTryingToGet,
+    "read:user",
+    userFound,
+  );
+
+  return response.status(200).json(secureOutputValues);
 }
 
 async function patchHandler(request, response) {
@@ -30,7 +38,12 @@ async function patchHandler(request, response) {
       action: "Verifique se você possui as permissões necessárias.",
     });
   }
-
   const updatedUser = await user.update(username, userInputValues);
-  return response.status(200).json(updatedUser);
+
+  const secureOutputValues = authorization.filterOutput(
+    userTryingToPatch,
+    "read:user",
+    updatedUser,
+  );
+  return response.status(200).json(secureOutputValues);
 }

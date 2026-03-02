@@ -96,6 +96,9 @@ describe("POST /api/v1/sessions", () => {
         password: "correctPassword",
       });
 
+      const activatedUser = await orchestrator.activateUser(createdUser.id);
+      expect(activatedUser.features).toContain("create:session");
+
       const response = await fetch("http://localhost:3000/api/v1/sessions", {
         method: "POST",
         headers: {
@@ -106,14 +109,13 @@ describe("POST /api/v1/sessions", () => {
           password: "correctPassword",
         }),
       });
-
       expect(response.status).toBe(201);
 
       const responseBody = await response.json();
       expect(responseBody).toEqual({
         id: responseBody.id,
         token: responseBody.token,
-        user_id: createdUser.id,
+        user_id: activatedUser.id,
         expires_at: responseBody.expires_at,
         created_at: responseBody.created_at,
         updated_at: responseBody.updated_at,

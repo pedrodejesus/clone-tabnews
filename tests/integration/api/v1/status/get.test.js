@@ -16,8 +16,37 @@ describe("GET /api/v1/status", () => {
       const parsedUpdatedAt = new Date(responseBody.updated_at).toISOString();
       expect(responseBody.updated_at).toBe(parsedUpdatedAt);
 
-      expect(responseBody.dependencies.database.version).toBe("16.0");
+      expect(responseBody.dependencies.database.max_connections).toBe(100);
+      expect(responseBody.dependencies.database.current_connections).toBe(1);
+      expect(responseBody.dependencies.database).not.toHaveProperty("version");
+    });
+  });
 
+  describe("Privileged user", () => {
+    test("With `read:status:all`", async () => {
+      const privilegedUser = await orchestrator.createUser();
+      const activatedPrivilegedUser = await orchestrator.activateUser(
+        privilegedUser.id,
+      );
+      await orchestrator.addFeaturesToUser(privilegedUser, ["read:status:all"]);
+      const privilegedUserSession = await orchestrator.createSession(
+        activatedPrivilegedUser.id,
+      );
+
+      const response = await fetch("http://localhost:3000/api/v1/status", {
+        headers: {
+          Cookie: `session_id=${privilegedUserSession.token}`,
+        },
+      });
+      expect(response.status).toBe(200);
+
+      const responseBody = await response.json();
+      expect(responseBody.updated_at).toBeDefined();
+
+      const parsedUpdatedAt = new Date(responseBody.updated_at).toISOString();
+      expect(responseBody.updated_at).toBe(parsedUpdatedAt);
+
+      expect(responseBody.dependencies.database.version).toEqual("16.0");
       expect(responseBody.dependencies.database.max_connections).toBe(100);
       expect(responseBody.dependencies.database.current_connections).toBe(1);
     });
